@@ -31,7 +31,7 @@ beta1 = 0.9
 beta2 = 0.95
 meta_vocab_size = None
 
-dataset = 'openwebtext'
+dataset = 'shakespeare'
 batch_size = 1
 gradient_accumulation_steps = 512
 context_size = 1024
@@ -40,7 +40,7 @@ save_interval = 1
 eval_interval = 10
 log_interval = 10
 eval_only = False
-out_dir = 'gpt2_openwebtext_pretrain_mlx'
+out_dir = 'gpt2_shakespeare_pretrain_mlx'
 
 config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
 exec(open('configurator.py').read())
