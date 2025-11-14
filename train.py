@@ -10,7 +10,6 @@ import mlx.optimizers as optim
 from mlx.utils import tree_flatten, tree_map
 
 from model import GPTConfig, GPT
-from optimizer import AdamW
 from tboard_utils import init_tensorboard, get_tensorboard
 
 n_layer = 12
@@ -129,8 +128,8 @@ def main():
 
 
     # setup optimizer
-    optimizer = AdamW(learning_rate=learning_rate, 
-                            betas=[beta1, beta2], 
+    optimizer = optim.AdamW(learning_rate=learning_rate,
+                            betas=[beta1, beta2],
                             weight_decay=weight_decay)
     loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
 
@@ -182,7 +181,7 @@ def main():
 
         # lr schedule
         new_lr = update_learning_rate(iter_num)
-        optimizer.set_learning_rate(new_lr)
+        optimizer.learning_rate = new_lr
 
         # mx.simplify(loss, model.parameters())
         loss = step(X, Y, gradient_accumulation_steps)

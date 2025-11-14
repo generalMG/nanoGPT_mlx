@@ -7,28 +7,6 @@ from dataclasses import dataclass
 
 import pdb
 
-class LayerNorm(nn.Module):
-    def __init__(self, dims: int, eps: float = 1e-5, affine: bool = True, bias: bool = False):
-        super().__init__()
-        self.use_bias = bias
-        if affine:
-            if bias:
-                self.bias = mx.zeros((dims,))
-            self.weight = mx.ones((dims,))
-        self.eps = eps
-        self.dims = dims
-    
-    def _extra_repr(self):
-        return f"{self.dims}, eps={self.eps}, affine={'weight' in self}, bias={self.use_bias}"
-    
-    def __call__(self, x):
-        means = mx.mean(x, axis=-1, keepdims=True)
-        var = mx.var(x, axis=-1, keepdims=True)
-        x = (x - means) * mx.rsqrt(var + self.eps)
-        out = (self.weight * x) if "weight" in self else x
-        return out + self.bias if self.use_bias else out
-        
-
 class CausalSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -91,9 +69,9 @@ class MLP(nn.Module):
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.ln_1 = LayerNorm(config.n_embd, bias=config.bias)
+        self.ln_1 = nn.LayerNorm(config.n_embd, affine=True, bias=config.bias)
         self.attn = CausalSelfAttention(config)
-        self.ln_2 = LayerNorm(config.n_embd, bias=config.bias)
+        self.ln_2 = nn.LayerNorm(config.n_embd, affine=True, bias=config.bias)
         self.mlp = MLP(config)
     
     def __call__(self, x, mask, cache=None):
@@ -125,7 +103,7 @@ class GPT(nn.Module):
         self.wpe = nn.Embedding(config.block_size, config.n_embd)
         self.drop = nn.Dropout(config.dropout)
         self.transformer = [Block(config) for _ in range(config.n_layer)]
-        self.ln_f = LayerNorm(config.n_embd, bias=config.bias)
+        self.ln_f = nn.LayerNorm(config.n_embd, affine=True, bias=config.bias)
         self.out_proj = nn.Linear(config.n_embd, config.vocab_size, bias=False)
     
     def _sample_next_token(self, x, temperature):
