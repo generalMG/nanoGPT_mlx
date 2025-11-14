@@ -59,3 +59,4 @@ python inference.py \
 
 - The code is adapted from https://github.com/vithursant/nanoGPT_mlx with modifications for full MLX support and new tooling around training/inference.
 - Scripts assume macOS with MLX-compatible hardware (Apple Silicon) and Metal support.
+- Works great on my machine.
