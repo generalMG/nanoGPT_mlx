@@ -2,6 +2,7 @@ import os
 import math
 import time
 import json
+import argparse
 
 import mlx
 import mlx.core as mx
@@ -12,38 +13,80 @@ from mlx.utils import tree_flatten, tree_map
 from model import GPTConfig, GPT
 from tboard_utils import init_tensorboard, get_tensorboard
 
-n_layer = 12
-n_head = 12
-n_embd = 768
-dropout = 0.0
-bias = False
-d_type = 'float32'
 
-learning_rate = 6.0e-4
-min_lr = 6.0e-5
-num_iters = 600000
-warmup_pct = 0.1
-warmup_iters = 2000
-lr_decay_iters = 600000
-weight_decay = 1e-1
-beta1 = 0.9
-beta2 = 0.95
-meta_vocab_size = None
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train a GPT model with MLX")
 
-dataset = 'shakespeare'
-batch_size = 1
-gradient_accumulation_steps = 512
-context_size = 1024
+    # Model architecture
+    parser.add_argument('--n_layer', type=int, default=12, help='Number of transformer layers')
+    parser.add_argument('--n_head', type=int, default=12, help='Number of attention heads')
+    parser.add_argument('--n_embd', type=int, default=768, help='Embedding dimension')
+    parser.add_argument('--dropout', type=float, default=0.0, help='Dropout rate')
+    parser.add_argument('--bias', type=lambda x: str(x).lower() == 'true', default=False, help='Use bias in linear layers')
+    parser.add_argument('--d_type', type=str, default='float32', help='Data type for model parameters')
 
-save_interval = 1
-eval_interval = 10
-log_interval = 10
-eval_only = False
-out_dir = 'gpt2_shakespeare_pretrain_mlx'
+    # Optimizer settings
+    parser.add_argument('--learning_rate', type=float, default=6.0e-4, help='Peak learning rate')
+    parser.add_argument('--min_lr', type=float, default=6.0e-5, help='Minimum learning rate')
+    parser.add_argument('--weight_decay', type=float, default=1e-1, help='Weight decay coefficient')
+    parser.add_argument('--beta1', type=float, default=0.9, help='Adam beta1')
+    parser.add_argument('--beta2', type=float, default=0.95, help='Adam beta2')
 
-config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
-exec(open('configurator.py').read())
-config = {k: globals()[k] for k in config_keys}
+    # Training settings
+    parser.add_argument('--num_iters', type=int, default=600000, help='Total number of training iterations')
+    parser.add_argument('--warmup_pct', type=float, default=0.1, help='Warmup percentage (deprecated, use warmup_iters)')
+    parser.add_argument('--warmup_iters', type=int, default=2000, help='Number of warmup iterations')
+    parser.add_argument('--lr_decay_iters', type=int, default=600000, help='Number of iterations for learning rate decay')
+    parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
+    parser.add_argument('--gradient_accumulation_steps', type=int, default=512, help='Number of gradient accumulation steps')
+    parser.add_argument('--context_size', type=int, default=1024, help='Context window size')
+
+    # Data settings
+    parser.add_argument('--dataset', type=str, default='shakespeare', help='Dataset name')
+    parser.add_argument('--meta_vocab_size', type=int, default=None, help='Vocabulary size (None for default 50304)')
+
+    # Logging and checkpointing
+    parser.add_argument('--out_dir', type=str, default='gpt2_shakespeare_pretrain_mlx', help='Output directory')
+    parser.add_argument('--save_interval', type=int, default=1, help='Save checkpoint every N iterations')
+    parser.add_argument('--eval_interval', type=int, default=10, help='Evaluate every N iterations')
+    parser.add_argument('--log_interval', type=int, default=10, help='Log training metrics every N iterations')
+    parser.add_argument('--eval_only', type=lambda x: str(x).lower() == 'true', default=False, help='Only run evaluation')
+
+    return parser.parse_args()
+
+
+# Parse arguments
+args = parse_args()
+
+# Extract args to variables for backward compatibility with existing code
+n_layer = args.n_layer
+n_head = args.n_head
+n_embd = args.n_embd
+dropout = args.dropout
+bias = args.bias
+d_type = args.d_type
+
+learning_rate = args.learning_rate
+min_lr = args.min_lr
+num_iters = args.num_iters
+warmup_pct = args.warmup_pct
+warmup_iters = args.warmup_iters
+lr_decay_iters = args.lr_decay_iters
+weight_decay = args.weight_decay
+beta1 = args.beta1
+beta2 = args.beta2
+meta_vocab_size = args.meta_vocab_size
+
+dataset = args.dataset
+batch_size = args.batch_size
+gradient_accumulation_steps = args.gradient_accumulation_steps
+context_size = args.context_size
+
+save_interval = args.save_interval
+eval_interval = args.eval_interval
+log_interval = args.log_interval
+eval_only = args.eval_only
+out_dir = args.out_dir
 
 data_dir = os.path.join('data', dataset)
 
