@@ -10,8 +10,8 @@ import pdb
 class LayerNorm(nn.Module):
     def __init__(self, dims: int, eps: float = 1e-5, affine: bool = True, bias: bool = False):
         super().__init__()
+        self.use_bias = bias
         if affine:
-            self.bias = bias
             if bias:
                 self.bias = mx.zeros((dims,))
             self.weight = mx.ones((dims,))
@@ -19,16 +19,14 @@ class LayerNorm(nn.Module):
         self.dims = dims
     
     def _extra_repr(self):
-        return f"{self.dims}, eps={self.eps}, affine={'weight' in self}, bias={self.bias}"
+        return f"{self.dims}, eps={self.eps}, affine={'weight' in self}, bias={self.use_bias}"
     
     def __call__(self, x):
         means = mx.mean(x, axis=-1, keepdims=True)
         var = mx.var(x, axis=-1, keepdims=True)
         x = (x - means) * mx.rsqrt(var + self.eps)
-        if self.bias:
-            return (self.weight * x + self.bias) if "weight" in self else x
-        else:
-            return (self.weight * x) if "weight" in self else x
+        out = (self.weight * x) if "weight" in self else x
+        return out + self.bias if self.use_bias else out
         
 
 class CausalSelfAttention(nn.Module):
@@ -137,8 +135,9 @@ class GPT(nn.Module):
         return y
     
     def generate(self, idx: mx.array, max_new_tokens=256, temperature=1.0, top_k=None):
-        idx = mx.zeros((1, 1), dtype=mx.int64)
-
+        if idx is None:
+            idx = mx.zeros((1, 1), dtype=mx.int64)
+        batch_size = idx.shape[0]
         for _ in range(max_new_tokens):
             idx_cond = idx if idx.shape[1] <= self.config.block_size else idx[:, -self.config.block_size:]
             
@@ -147,25 +146,20 @@ class GPT(nn.Module):
             logits = logits[:, -1, :] / temperature
 
             if top_k is not None:
-                v, _ = custom_topk(logits, min(top_k, logits.shape[-1]))
+                k = min(top_k, logits.shape[-1])
+                sorted_logits = mx.sort(logits, axis=-1)
+                kth_indices = mx.full(
+                    (batch_size, 1),
+                    sorted_logits.shape[-1] - k,
+                    dtype=mx.int32,
+                )
+                kth_values = mx.take_along_axis(sorted_logits, kth_indices, axis=-1)
+                logits = mx.where(logits < kth_values, float("-1e9"), logits)
 
-                v_shape = v.shape
+            idx_next = mx.random.categorical(logits, axis=-1)
+            idx_next = mx.expand_dims(idx_next.astype(mx.int64), axis=1)
 
-                last_index = v_shape[1] - 1
-
-                last_element = mx.take(v, mx.array([last_index]))
-                
-                v_last_expanded = mx.expand_dims(last_element, axis=1)
-
-                mask = logits < v_last_expanded
-                inf_tensor = mx.ones_like(logits) * float('-1e9')
-                logits = (mask * logits) + ((1 - mask) * inf_tensor)
-
-            probs = mx.softmax(logits)
-
-            idx_next = mx.random.categorical(probs, 1)
-
-            idx = mx.concatenate([idx, mx.expand_dims(idx_next, axis=0)], axis=1)
+            idx = mx.concatenate([idx, idx_next], axis=1)
 
         return idx
     
@@ -197,21 +191,3 @@ class GPT(nn.Module):
 
         x, _ = self._forward_transformer(x, pos, mask=mask)
         return self.out_proj(x)
-    
-
-def custom_topk(input, k):
-    flat_input = mx.reshape(input, (-1))
-
-    sorted_indices = mx.argsort(flat_input)
-    sorted_indices = mx.take(sorted_indices, mx.arange(sorted_indices.size - 1, -1, -1))
-
-    topk_indices = custom_slice(sorted_indices, start=0, end=k)
-
-    topk_values = mx.take(flat_input, topk_indices)
-
-    return mx.expand_dims(topk_values, axis=0), mx.expand_dims(topk_indices, axis=0)
-
-
-def custom_slice(indices, start, end):
-    sliced_indices = mx.take(indices, mx.arange(start, end))
-    return sliced_indices
