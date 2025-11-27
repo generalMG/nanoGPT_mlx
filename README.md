@@ -191,8 +191,6 @@ nanoGPT_mlx/
 ├── model.py              # GPT model architecture
 ├── train.py              # Training script with argparse config
 ├── inference.py          # Text generation script
-├── optimizer.py          # (Deprecated) Custom optimizer
-├── configurator.py       # (Deprecated) Old config system
 ├── tboard_utils.py       # TensorBoard utilities
 ├── requirements.txt      # Python dependencies
 ├── data/
@@ -222,6 +220,7 @@ The implementation includes:
 - ✅ **Argparse configuration** - Clean command-line argument handling with defaults
 - ✅ **No NumPy dependency** - Pure MLX implementation
 - ✅ **Modern patterns** - Uses `nn.value_and_grad()` and direct `optimizer.learning_rate` assignment
+- ✅ **Reproducibility** - Fixed random seed for consistent training results
 
 ## Monitoring Training
 
