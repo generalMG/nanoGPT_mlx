@@ -1,6 +1,6 @@
 # nanoGPT-MLX
 
-A minimal, educational GPT implementation for Apple Silicon using MLX. Train GPT-style language models efficiently on your Mac with M1/M2/M3 chips.
+A minimal, educational GPT implementation for Apple Silicon using MLX. Train GPT-style language models efficiently on your Mac with M-series chips.
 
 ## Overview
 
@@ -14,7 +14,7 @@ This project implements a GPT-style transformer model from scratch using Apple's
 
 ## Requirements
 
-- macOS with Apple Silicon (M1/M2/M3)
+- macOS with Apple Silicon (M-series)
 - Python 3.8+
 - MLX 0.29.4 or later
 
@@ -257,7 +257,7 @@ Then open http://localhost:6006 in your browser.
 - Monitor Activity Monitor for Metal GPU usage
 
 **Compatibility Note:**
-- Tested and works great on Apple Silicon (M1/M2/M3) machines
+- Tested and works great on Apple Silicon (M-series) machines
 
 ## Citation
 
