@@ -4,4 +4,4 @@ data/shakespeare/val.bin
 *gpt2_shakespeare_pretrain_mlx
 *output*/*
 *.ini
-*tests*
+
