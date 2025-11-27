@@ -24,6 +24,9 @@ from mlx.utils import tree_flatten, tree_map
 from model import GPT, GPTConfig
 from tboard_utils import get_tensorboard, init_tensorboard
 
+# Set random seed for reproducibility
+mx.random.seed(1337)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
